@@ -1,6 +1,13 @@
 const express = require('express')
 const { v4 } = require('uuid')
 const app = express()
+const mongoose = require('mongoose')
+
+mongoose
+  .connect('mongodb://localhost/lean-coffee/board')
+  .then(() => console.log('Connected to mongodb'))
+  .catch(error => console.log('could not connect to mongodb', error))
+
 let users = []
 app.use(express.json()) // add middleware for json data
 app.get('/api/users', (req, res) => {
