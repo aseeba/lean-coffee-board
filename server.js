@@ -1,30 +1,51 @@
 const express = require('express')
-const { v4 } = require('uuid')
+const mongoose = require('mongoose')
+const Card = require('./models/Card')
+
+mongoose
+  .connect('mongodb://localhost/lean-coffee-board', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log('Connected to mongodb'))
+  .catch(error => console.error('Could not connect to mongodb', error))
+
 const app = express()
-let users = []
+
 app.use(express.json()) // add middleware for json data
-app.get('/api/users', (req, res) => {
-  res.json(users)
+
+app.use('/api/users', require('./routes/users'))
+
+app.get('/api/cards', async (req, res, next) => {
+  res.json(await Card.find().populate('author').catch(next))
 })
-app.get('/api/users/:id', (req, res) => {
+
+app.get('/api/cards/:id', async (req, res, next) => {
   const { id } = req.params
-  res.json(users.find(user => user.id === id))
+  res.json(await Card.findById(id).populate('author').catch(next))
 })
-app.delete('/api/users/:id', (req, res) => {
+
+app.patch('/api/cards/:id', async (req, res, next) => {
   const { id } = req.params
-  const index = users.findIndex(user => user.id === id)
-  users = [...users.slice(0, index), ...users.slice(index + 1)]
-  res.json(users)
+  res.json(
+    await Card.findByIdAndUpdate(id, req.body, { new: true }).catch(next)
+  )
 })
-app.post('/api/users', (req, res) => {
-  // exercise: add id (via uuid) for each new user
-  const newUser = { ...req.body, id: v4() }
-  users.push(newUser)
-  res.json(newUser)
+
+app.delete('/api/cards/:id', async (req, res, next) => {
+  const { id } = req.params
+  res.json(await Card.findByIdAndDelete(id).catch(next))
 })
-app.get('/api/cards', (req, res) => {
-  res.json([{ title: 'First card' }])
+
+app.post('/api/cards', async (req, res, next) => {
+  res.json(await Card.create(req.body).catch(next))
 })
+
+app.use((err, req, res, next) => {
+  console.log(err.message)
+  res.json({ error: err.message })
+})
+
 app.listen(3000, () => {
   console.log('Server started at http://localhost:3000')
 })
