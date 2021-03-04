@@ -1,7 +1,6 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const Card = require('./models/Card')
-const User = require('./models/User')
 
 mongoose
   .connect('mongodb://localhost/lean-coffee-board', {
@@ -15,40 +14,36 @@ const app = express()
 
 app.use(express.json()) // add middleware for json data
 
-app.get('/api/users', async (req, res) => {
-  res.json(await User.find())
+app.use('/api/users', require('./routes/users'))
+
+app.get('/api/cards', async (req, res, next) => {
+  res.json(await Card.find().populate('author').catch(next))
 })
 
-app.get('/api/users/:id', async (req, res) => {
+app.get('/api/cards/:id', async (req, res, next) => {
   const { id } = req.params
-  res.json(await User.findOne({ id }))
+  res.json(await Card.findById(id).populate('author').catch(next))
 })
 
-app.delete('/api/users/:id', async (req, res) => {
+app.patch('/api/cards/:id', async (req, res, next) => {
   const { id } = req.params
-  res.json(await User.deleteOne({ id }))
+  res.json(
+    await Card.findByIdAndUpdate(id, req.body, { new: true }).catch(next)
+  )
 })
 
-app.post('/api/users', async (req, res) => {
-  res.json(await User.create(req.body))
-})
-
-app.get('/api/cards', async (req, res) => {
-  res.json(await Card.find().populate('author'))
-})
-
-app.get('/api/cards/:id', async (req, res) => {
+app.delete('/api/cards/:id', async (req, res, next) => {
   const { id } = req.params
-  res.json(await Card.findOne({ id }).populate('author'))
+  res.json(await Card.findByIdAndDelete(id).catch(next))
 })
 
-app.delete('/api/cards/:id', async (req, res) => {
-  const { id } = req.params
-  res.json(await Card.deleteOne({ id }))
+app.post('/api/cards', async (req, res, next) => {
+  res.json(await Card.create(req.body).catch(next))
 })
 
-app.post('/api/cards', async (req, res) => {
-  res.json(await Card.create(req.body))
+app.use((err, req, res, next) => {
+  console.log(err.message)
+  res.json({ error: err.message })
 })
 
 app.listen(3000, () => {
