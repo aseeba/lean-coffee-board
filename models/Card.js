@@ -7,6 +7,11 @@ const schema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
+    // Hier fügen wir das Voting hinzu
+    votes: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true, versionKey: false }
 )
